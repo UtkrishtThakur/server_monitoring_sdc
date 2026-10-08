@@ -1,0 +1,33 @@
+version: 1
+
+alerts:
+  cpu:
+    enabled: true
+    threshold: 80
+    duration: 5m
+    severity: warning
+
+  memory:
+    enabled: true
+    threshold: 85
+    duration: 5m
+    severity: warning
+
+  disk:
+    enabled: true
+    threshold: 90
+    duration: 10m
+    severity: critical
+
+  network:
+    enabled: true
+    rx_bytes_per_second: 100000000
+    tx_bytes_per_second: 100000000
+    duration: 5m
+    severity: warning
+
+notifications:
+  receivers:
+    - name: admin
+      type: webhook
+      url_env: ALERT_WEBHOOK_URL

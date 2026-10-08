@@ -1,0 +1,33 @@
+# Runtime Data / Persistent Volumes
+prometheus-data/
+grafana-data/
+
+# Generated Configuration
+generated/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Editor / OS Files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+*.tmp
+
+# Environment / Secrets
+.env
+.env.*
+!.env.example
+*.secret
+*.secrets
+*.key
+*.pem
+
+# Build Artifacts
+*.tar
+*.tar.gz
+*.zip
