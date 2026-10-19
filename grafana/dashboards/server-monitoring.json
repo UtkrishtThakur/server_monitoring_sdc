@@ -1,36 +1,269 @@
 {
-  "title": "Server Monitoring",
-  "panels": [
+  "__inputs": [],
+  "__requires": [
     {
-      "type": "timeseries",
-      "title": "CPU Usage",
-      "targets": [
-        {
-          "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "type": "timeseries",
-      "title": "Memory Usage",
-      "targets": [
-        {
-          "expr": "100 * (1 - ((node_memory_MemFree_bytes + node_memory_Buffers_bytes + node_memory_Cached_bytes) / node_memory_MemTotal_bytes))",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "type": "timeseries",
-      "title": "Disk Usage (/host/root)",
-      "targets": [
-        {
-          "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=\"/host/root\"} * 100) / node_filesystem_size_bytes{mountpoint=\"/host/root\"})",
-          "refId": "A"
-        }
-      ]
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
     }
   ],
-  "schemaVersion": 16
+  "id": null,
+  "uid": "sdc-server-monitoring",
+  "title": "SDC Server Monitoring",
+  "description": "Host system metrics: CPU, Memory, Disk, Network, Uptime",
+  "tags": ["server", "host", "node-exporter"],
+  "schemaVersion": 38,
+  "version": 2,
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Host Availability",
+      "description": "1 = UP, 0 = DOWN",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}}
+          ],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]},
+          "color": {"mode": "thresholds"},
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "background"},
+      "targets": [{"expr": "up{job=\"node\"}", "refId": "A", "legendFormat": "Host Up"}]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "System Uptime",
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "color": {"mode": "thresholds"}
+        },
+        "overrides": []
+      },
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "background"},
+      "targets": [{"expr": "time() - node_boot_time_seconds", "refId": "A", "legendFormat": "Uptime"}]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "CPU Utilization",
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0, "max": 100,
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 70}, {"color": "red", "value": 85}]},
+          "color": {"mode": "thresholds"}
+        },
+        "overrides": []
+      },
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "background"},
+      "targets": [{"expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "refId": "A", "legendFormat": "CPU %"}]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Memory Utilization",
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0, "max": 100,
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 75}, {"color": "red", "value": 90}]},
+          "color": {"mode": "thresholds"}
+        },
+        "overrides": []
+      },
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "background"},
+      "targets": [{"expr": "100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))", "refId": "A", "legendFormat": "RAM %"}]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Root Disk Utilization",
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0, "max": 100,
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 75}, {"color": "red", "value": 90}]},
+          "color": {"mode": "thresholds"}
+        },
+        "overrides": []
+      },
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "background"},
+      "targets": [{"expr": "100 - ((node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"} * 100) / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"})", "refId": "A", "legendFormat": "Disk %"}]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Total RAM",
+      "gridPos": {"h": 4, "w": 4, "x": 20, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]},
+          "color": {"mode": "thresholds"}
+        },
+        "overrides": []
+      },
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "background"},
+      "targets": [{"expr": "node_memory_MemTotal_bytes", "refId": "A", "legendFormat": "Total RAM"}]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "CPU Utilization (%)",
+      "description": "Percentage of CPU time NOT idle, averaged across all cores",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0, "max": 100,
+          "custom": {"lineWidth": 2, "fillOpacity": 10, "gradientMode": "opacity"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 80}]},
+          "color": {"mode": "palette-classic"}
+        },
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [
+        {"expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "refId": "A", "legendFormat": "CPU Total %"},
+        {"expr": "avg by (instance) (rate(node_cpu_seconds_total{mode=\"user\"}[5m])) * 100", "refId": "B", "legendFormat": "User %"},
+        {"expr": "avg by (instance) (rate(node_cpu_seconds_total{mode=\"system\"}[5m])) * 100", "refId": "C", "legendFormat": "System %"},
+        {"expr": "avg by (instance) (rate(node_cpu_seconds_total{mode=\"iowait\"}[5m])) * 100", "refId": "D", "legendFormat": "I/O Wait %"}
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Memory Usage",
+      "description": "Host memory breakdown",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {"lineWidth": 2, "fillOpacity": 10, "gradientMode": "opacity"},
+          "color": {"mode": "palette-classic"}
+        },
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [
+        {"expr": "node_memory_MemTotal_bytes", "refId": "A", "legendFormat": "Total"},
+        {"expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes", "refId": "B", "legendFormat": "Used"},
+        {"expr": "node_memory_MemAvailable_bytes", "refId": "C", "legendFormat": "Available"},
+        {"expr": "node_memory_Cached_bytes + node_memory_Buffers_bytes", "refId": "D", "legendFormat": "Cache + Buffers"}
+      ]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Filesystem Usage",
+      "description": "Disk utilization per mount point",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0, "max": 100,
+          "custom": {"lineWidth": 2, "fillOpacity": 10},
+          "color": {"mode": "palette-classic"}
+        },
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [
+        {"expr": "100 - ((node_filesystem_avail_bytes{fstype!~\"tmpfs|devtmpfs|overlay\"} * 100) / node_filesystem_size_bytes{fstype!~\"tmpfs|devtmpfs|overlay\"})", "refId": "A", "legendFormat": "{{mountpoint}} ({{device}})"}
+      ]
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Disk I/O Throughput",
+      "description": "Read and write bytes per second",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {"lineWidth": 2, "fillOpacity": 10},
+          "color": {"mode": "palette-classic"}
+        },
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [
+        {"expr": "rate(node_disk_read_bytes_total[5m])", "refId": "A", "legendFormat": "{{device}} Read"},
+        {"expr": "rate(node_disk_written_bytes_total[5m])", "refId": "B", "legendFormat": "{{device}} Write"}
+      ]
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Network Throughput",
+      "description": "Bytes received and transmitted per second by network interface",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {"lineWidth": 2, "fillOpacity": 10},
+          "color": {"mode": "palette-classic"}
+        },
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [
+        {"expr": "rate(node_network_receive_bytes_total{device!~\"lo|docker.*|br-.*|veth.*\"}[5m])", "refId": "A", "legendFormat": "{{device}} RX"},
+        {"expr": "rate(node_network_transmit_bytes_total{device!~\"lo|docker.*|br-.*|veth.*\"}[5m])", "refId": "B", "legendFormat": "{{device}} TX"}
+      ]
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Filesystem Available Space",
+      "description": "Available bytes per mount point",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {"lineWidth": 2, "fillOpacity": 10},
+          "color": {"mode": "palette-classic"}
+        },
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [
+        {"expr": "node_filesystem_avail_bytes{fstype!~\"tmpfs|devtmpfs|overlay\"}", "refId": "A", "legendFormat": "{{mountpoint}}"}
+      ]
+    }
+  ]
 }

@@ -51,16 +51,30 @@ def generate_prometheus_rules(config):
 
     if config.get('alerts', {}).get('disk', {}).get('enabled', False):
         disk = config['alerts']['disk']
+        # node_exporter with --path.rootfs reports mountpoints relative to the real root,
+        # so the host root filesystem appears as mountpoint="/" not "/host/root".
         rules.append({
             'alert': 'HighDiskUsage',
-            'expr': f'100 - ((node_filesystem_avail_bytes{{mountpoint="/host/root"}} * 100) / node_filesystem_size_bytes{{mountpoint="/host/root"}}) > {disk["threshold"]}',
+            'expr': f'100 - ((node_filesystem_avail_bytes{{mountpoint="/",fstype!="tmpfs"}} * 100) / node_filesystem_size_bytes{{mountpoint="/",fstype!="tmpfs"}}) > {disk["threshold"]}',
             'for': disk['duration'],
             'labels': {'severity': disk['severity']},
             'annotations': {
-                'summary': 'High Disk usage',
-                'description': f'Disk usage on /host/root has remained above {disk["threshold"]}% for {disk["duration"]}.'
+                'summary': 'High Disk usage on host root filesystem',
+                'description': f'Disk usage on host root (/) has remained above {disk["threshold"]}% for {disk["duration"]}.'
             }
         })
+
+    # Always add HostDown and ExporterDown alerts
+    rules.append({
+        'alert': 'HostDown',
+        'expr': 'up{job="node"} == 0',
+        'for': '1m',
+        'labels': {'severity': 'critical'},
+        'annotations': {
+            'summary': 'Host monitoring target is down',
+            'description': 'The node_exporter scrape target has been unreachable for more than 1 minute.'
+        }
+    })
 
     if config.get('alerts', {}).get('network', {}).get('enabled', False):
         net = config['alerts']['network']
@@ -71,10 +85,10 @@ def generate_prometheus_rules(config):
         excludes = interfaces_config.get('exclude', ['^docker0$', '^br-.*', '^veth.*'])
         
         if includes:
-            device_match = f'device=~"{",".join(includes)}"'
+            device_match = f'device=~"({"|".join(includes)})"'
         else:
             if excludes:
-                device_match = f'device!~"{",".join(excludes)}"'
+                device_match = f'device!~"({"|".join(excludes)})"'
             else:
                 device_match = 'device=~".*"'
 

@@ -1,0 +1,57 @@
+---
+# SDC Server Monitoring Stack
+# Usage:
+#   GF_SECURITY_ADMIN_PASSWORD=changeme docker compose up -d
+#
+# Or create a .env file with:
+#   GF_SECURITY_ADMIN_PASSWORD=changeme
+#   ALERT_WEBHOOK_URL=https://your-webhook.example.com
+
+services:
+  server-monitoring:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: server-monitoring:latest
+    container_name: server-monitoring
+    restart: unless-stopped
+
+    # Ports: bind to localhost only by default for security.
+    # Change to "0.0.0.0:3000:3000" to expose to the network.
+    ports:
+      - "127.0.0.1:3000:3000"    # Grafana UI
+      - "127.0.0.1:9090:9090"   # Prometheus UI
+      - "127.0.0.1:9093:9093"   # Alertmanager UI
+
+    environment:
+      # REQUIRED: Set Grafana admin password (never leave default)
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:?GF_SECURITY_ADMIN_PASSWORD must be set}
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      # OPTIONAL: Webhook URL for alert notifications
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+
+    volumes:
+      # Host filesystem access for node_exporter (read-only)
+      - /:/host/root:ro,rslave
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+
+      # Persistent monitoring data (survives container recreation)
+      - prometheus-data:/prometheus
+      - grafana-data:/var/lib/grafana
+
+      # Live configuration (edit monitoring.yaml to change alert thresholds)
+      - ./config:/opt/server-monitoring/config:rw
+
+    healthcheck:
+      test: ["/opt/server-monitoring/scripts/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
